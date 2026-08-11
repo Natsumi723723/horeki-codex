@@ -1,5 +1,5 @@
 import type { CheckIn, ExploreSpot, GeoPoint, WalkRecord } from "../types";
-import { distanceBetween } from "./geo";
+import { distanceBetween, estimateSteps } from "./geo";
 
 const DAY = 86_400_000;
 const today = new Date();
@@ -28,13 +28,15 @@ export const SAMPLE_RECORDS: WalkRecord[] = [0, 2].map((offset, recordIndex) => 
     breakBefore: index === 0,
   }));
   const calculatedDistance = points.slice(1).reduce((sum, point, index) => sum + distanceBetween(points[index], point), 0);
+  const distanceM = calculatedDistance * (recordIndex === 0 ? 4.7 : 3.2);
   return {
     id: `sample-${recordIndex}`,
     startedAt,
     endedAt: startedAt + (recordIndex === 0 ? 7_260_000 : 4_920_000),
     durationMs: recordIndex === 0 ? 7_260_000 : 4_920_000,
-    distanceM: calculatedDistance * (recordIndex === 0 ? 4.7 : 3.2),
+    distanceM,
     cumulativeElevationM: recordIndex === 0 ? 48 : 31,
+    stepCount: estimateSteps(distanceM),
     points,
     isSample: true,
   };

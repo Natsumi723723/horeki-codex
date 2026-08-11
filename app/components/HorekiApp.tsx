@@ -33,10 +33,12 @@ import {
   averageSpeed,
   calculateElevation,
   distanceBetween,
+  estimateSteps,
   evaluatePoint,
   formatClockDuration,
   formatDistance,
   formatDuration,
+  formatSteps,
 } from "../lib/geo";
 import { createSampleCheckIns, fallbackSpots, SAMPLE_CHECK_INS, SAMPLE_RECORDS } from "../lib/sample-data";
 import type { ActiveWalk, CheckIn, ExploreSpot, GeoPoint, SpotCategory, WalkRecord } from "../types";
@@ -483,6 +485,7 @@ export default function HorekiApp() {
       durationMs: Math.max(0, endedAt - activeWalk.startedAt - activeWalk.totalPausedMs - currentPauseMs),
       distanceM: activeWalk.distanceM,
       cumulativeElevationM: calculateElevation(activeWalk.points),
+      stepCount: estimateSteps(activeWalk.distanceM),
       points: activeWalk.points,
       isSample: activeWalk.isDemo,
     };
@@ -663,7 +666,7 @@ export default function HorekiApp() {
                   <div className="live-stats">
                     <div><small>距離</small><strong>{formatDistance(activeWalk.distanceM)}</strong></div>
                     <div><small>歩行時間</small><strong>{formatClockDuration(activeDuration)}</strong></div>
-                    <div><small>取得地点</small><strong>{activeWalk.points.length}<em>点</em></strong></div>
+                    <div><small>推定歩数</small><strong>{formatSteps(estimateSteps(activeWalk.distanceM))}<em>歩</em></strong></div>
                   </div>
                   {activeDemoCheckIns.length > 0 && (
                     <div className="demo-checkins-live">
@@ -734,7 +737,11 @@ export default function HorekiApp() {
                           <div className="record-card-content">
                             <div className="record-date"><span>{formatDate(record.startedAt)}</span>{record.isSample && <em>サンプル</em>}</div>
                             <strong>{formatDistance(record.distanceM)}</strong>
-                            <div className="record-meta"><span><Clock3 size={15} /> {formatDuration(record.durationMs)}</span><span>{formatTime(record.startedAt)} 出発</span></div>
+                            <div className="record-meta">
+                              <span><Clock3 size={15} /> {formatDuration(record.durationMs)}</span>
+                              <span><Footprints size={15} /> {formatSteps(record.stepCount ?? estimateSteps(record.distanceM))}歩</span>
+                              <span className="record-start-time">{formatTime(record.startedAt)} 出発</span>
+                            </div>
                           </div>
                           <ChevronRight className="record-chevron" size={21} />
                         </button>
@@ -954,8 +961,10 @@ function RecordDetail({ record, checkIns, onBack }: { record: WalkRecord; checkI
         <div className="hero-stat"><small>歩行距離</small><strong>{formatDistance(record.distanceM)}</strong></div>
         <div><Clock3 size={18} /><small>歩行時間</small><strong>{formatDuration(record.durationMs)}</strong></div>
         <div><Navigation size={18} /><small>平均速度</small><strong>{averageSpeed(record)} <em>km/h</em></strong></div>
+        <div><Footprints size={18} /><small>推定歩数</small><strong>{formatSteps(record.stepCount ?? estimateSteps(record.distanceM))} <em>歩</em></strong></div>
         <div><Layers3 size={18} /><small>累積標高</small><strong>{record.cumulativeElevationM === null ? "—" : `${Math.round(record.cumulativeElevationM)} m`}</strong></div>
       </div>
+      <p className="step-estimate-note"><Footprints size={13} /> GPS距離を歩幅72cmで換算した推定値です。</p>
       {walkCheckIns.length > 0 && (
         <section className="detail-checkins">
           <div className="section-label"><span><MapPin size={15} /> この街歩きのチェックイン</span><small>{walkCheckIns.length}件</small></div>

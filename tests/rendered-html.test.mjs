@@ -64,10 +64,14 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.match(app, /TimelinePhoto/);
   assert.match(app, /imageUrl:\s*selectedSpot\.imageUrl/);
   assert.doesNotMatch(app, /className="map-title-card"/);
+  assert.match(app, /推定歩数/);
+  assert.match(app, /stepCount:\s*estimateSteps/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);
   assert.match(geo, /EARTH_RADIUS_M/);
+  assert.match(geo, /AVERAGE_STRIDE_M = 0\.72/);
+  assert.match(geo, /estimateSteps/);
   assert.match(database, /indexedDB\.open/);
   assert.match(database, /walkRecords/);
   assert.match(database, /checkIns/);

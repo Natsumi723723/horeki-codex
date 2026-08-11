@@ -14,6 +14,7 @@ export type WalkRecord = {
   durationMs: number;
   distanceM: number;
   cumulativeElevationM: number | null;
+  stepCount?: number;
   points: GeoPoint[];
   isSample?: boolean;
 };

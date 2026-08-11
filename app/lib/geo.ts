@@ -1,6 +1,7 @@
 import type { GeoPoint, WalkRecord } from "../types";
 
 const EARTH_RADIUS_M = 6_371_000;
+const AVERAGE_STRIDE_M = 0.72;
 
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
@@ -85,6 +86,14 @@ export function formatClockDuration(durationMs: number) {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   return [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
+}
+
+export function estimateSteps(distanceM: number) {
+  return Math.max(0, Math.round(distanceM / AVERAGE_STRIDE_M));
+}
+
+export function formatSteps(stepCount: number) {
+  return new Intl.NumberFormat("ja-JP").format(Math.max(0, Math.round(stepCount)));
 }
 
 export function averageSpeed(record: WalkRecord) {
