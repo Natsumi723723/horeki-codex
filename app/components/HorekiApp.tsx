@@ -103,6 +103,58 @@ function spotDescription(tags: Record<string, string>, category: SpotCategory) {
   return defaults[category];
 }
 
+function commonsImageUrl(value: string) {
+  const filename = value.replace(/^File:/i, "").trim();
+  if (!filename) return undefined;
+  return `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(filename)}?width=900`;
+}
+
+async function wikipediaImage(value: string) {
+  const separator = value.indexOf(":");
+  const language = separator > 0 ? value.slice(0, separator) : "ja";
+  const title = separator > 0 ? value.slice(separator + 1) : value;
+  if (!/^[a-z-]{2,12}$/i.test(language) || !title) return null;
+  try {
+    const response = await fetch(`https://${language}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+    if (!response.ok) return null;
+    const summary = await response.json() as {
+      thumbnail?: { source?: string };
+      originalimage?: { source?: string };
+      content_urls?: { desktop?: { page?: string } };
+    };
+    const imageUrl = summary.thumbnail?.source ?? summary.originalimage?.source;
+    if (!imageUrl) return null;
+    return {
+      imageUrl,
+      imageCredit: "Wikipedia / Wikimedia Commons",
+      imageSourceUrl: summary.content_urls?.desktop?.page,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function enrichSpotImage(spot: ExploreSpot, tags: Record<string, string>) {
+  const directImage = tags.image?.startsWith("https://") ? tags.image : undefined;
+  const commonsValue = tags.wikimedia_commons;
+  if (directImage || commonsValue?.startsWith("File:")) {
+    return {
+      ...spot,
+      imageUrl: directImage ?? commonsImageUrl(commonsValue),
+      imageAlt: `${spot.name}の写真`,
+      imageCredit: commonsValue ? "Wikimedia Commons" : "OpenStreetMap登録画像",
+      imageSourceUrl: commonsValue
+        ? `https://commons.wikimedia.org/wiki/${encodeURIComponent(commonsValue.replace(/ /g, "_"))}`
+        : directImage,
+    };
+  }
+  if (tags.wikipedia) {
+    const image = await wikipediaImage(tags.wikipedia);
+    if (image) return { ...spot, ...image, imageAlt: `${spot.name}の写真` };
+  }
+  return spot;
+}
+
 async function fetchNearbySpots(point: GeoPoint): Promise<ExploreSpot[]> {
   const query = `[out:json][timeout:18];(
     nwr(around:3000,${point.lat},${point.lng})[historic];
@@ -121,7 +173,7 @@ async function fetchNearbySpots(point: GeoPoint): Promise<ExploreSpot[]> {
     elements: { id: number; type: string; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }[];
   };
   const seen = new Set<string>();
-  return data.elements
+  const candidates = data.elements
     .flatMap((element) => {
       const lat = element.lat ?? element.center?.lat;
       const lng = element.lon ?? element.center?.lon;
@@ -131,17 +183,43 @@ async function fetchNearbySpots(point: GeoPoint): Promise<ExploreSpot[]> {
       seen.add(name);
       const category = parseCategory(tags);
       return [{
-        id: `${element.type}-${element.id}`,
-        name,
-        category,
-        lat,
-        lng,
-        distanceM: distanceBetween(point, { lat, lng }),
-        description: spotDescription(tags, category),
-      } satisfies ExploreSpot];
+        spot: {
+          id: `${element.type}-${element.id}`,
+          name,
+          category,
+          lat,
+          lng,
+          distanceM: distanceBetween(point, { lat, lng }),
+          description: spotDescription(tags, category),
+        } satisfies ExploreSpot,
+        tags,
+      }];
     })
-    .sort((a, b) => a.distanceM - b.distanceM)
+    .sort((a, b) => a.spot.distanceM - b.spot.distanceM)
     .slice(0, 24);
+  return Promise.all(candidates.map(({ spot, tags }, index) => index < 16 ? enrichSpotImage(spot, tags) : spot));
+}
+
+function SpotPhoto({ spot, compact = false }: { spot: ExploreSpot; compact?: boolean }) {
+  const meta = CATEGORY_META[spot.category];
+  const Icon = meta.icon;
+  if (!spot.imageUrl) {
+    return (
+      <span className={`spot-photo-placeholder ${meta.className} ${compact ? "compact" : ""}`}>
+        <Icon size={compact ? 23 : 34} />
+        {!compact && <small>写真はまだありません</small>}
+      </span>
+    );
+  }
+  return (
+    <img
+      className={compact ? "spot-card-photo" : "spot-detail-photo"}
+      src={spot.imageUrl}
+      alt={spot.imageAlt ?? `${spot.name}の写真`}
+      loading="lazy"
+      decoding="async"
+    />
+  );
 }
 
 function BrandMark() {
@@ -664,17 +742,30 @@ export default function HorekiApp() {
                 </div>
                 {spotsOffline && <div className="offline-note"><WifiOff size={16} /> {explorePreview ? "GPSを使わないサンプルスポット表示です。チェックインも保存されません。" : "オフラインのため、周辺スポットはサンプル表示です。"}</div>}
                 {selectedSpot && (
-                  <section id="spot-checkin-panel" className="checkin-panel" aria-label="選択したスポットへのチェックイン">
-                    <div className="checkin-spot-icon"><MapPin size={21} /></div>
-                    <div className="checkin-copy">
-                      <small>{selectedSpot.category}・現在地から {formatDistance(selectedSpot.distanceM)}</small>
-                      <strong>{selectedSpot.name}</strong>
-                      {selectedSpotCheckIn && <span><CheckCircle2 size={14} /> 前回 {formatDate(selectedSpotCheckIn.checkedInAt, false)} {formatTime(selectedSpotCheckIn.checkedInAt)}</span>}
+                  <section id="spot-checkin-panel" className="spot-detail-card" aria-label="選択したスポットの詳細とチェックイン">
+                    <div className="spot-detail-media">
+                      <SpotPhoto spot={selectedSpot} />
+                      <span>{selectedSpot.category}</span>
                     </div>
-                    <button type="button" onClick={checkInToSpot} disabled={checkInSaving}>
-                      {checkInSaving ? <LoaderCircle size={17} className="spin" /> : <CheckCircle2 size={17} />}
-                      この場所にチェックイン
-                    </button>
+                    <div className="spot-detail-body">
+                      <div className="spot-detail-heading">
+                        <div>
+                          <small>現在地から {formatDistance(selectedSpot.distanceM)}</small>
+                          <h2>{selectedSpot.name}</h2>
+                        </div>
+                        {selectedSpotCheckIn && <span><CheckCircle2 size={14} /> 前回 {formatDate(selectedSpotCheckIn.checkedInAt, false)} {formatTime(selectedSpotCheckIn.checkedInAt)}</span>}
+                      </div>
+                      <p>{selectedSpot.description}</p>
+                      {selectedSpot.imageCredit && (
+                        selectedSpot.imageSourceUrl
+                          ? <a className="spot-photo-credit" href={selectedSpot.imageSourceUrl} target="_blank" rel="noreferrer">写真：{selectedSpot.imageCredit}</a>
+                          : <small className="spot-photo-credit">写真：{selectedSpot.imageCredit}</small>
+                      )}
+                      <button className="spot-checkin-button" type="button" onClick={checkInToSpot} disabled={checkInSaving}>
+                        {checkInSaving ? <LoaderCircle size={17} className="spin" /> : <CheckCircle2 size={17} />}
+                        この場所にチェックイン
+                      </button>
+                    </div>
                   </section>
                 )}
                 {!selectedSpot && spots.length > 0 && (
@@ -703,8 +794,6 @@ export default function HorekiApp() {
                 <div className="spot-list">
                   {spotsLoading && spots.length === 0 && [0, 1, 2].map((item) => <div className="spot-skeleton" key={item} />)}
                   {spots.map((spot) => {
-                    const meta = CATEGORY_META[spot.category];
-                    const Icon = meta.icon;
                     return (
                       <button
                         id={`spot-${spot.id}`}
@@ -713,7 +802,7 @@ export default function HorekiApp() {
                         key={spot.id}
                         onClick={() => openSpot(spot)}
                       >
-                        <span className={`spot-icon ${meta.className}`}><Icon size={21} /></span>
+                        <SpotPhoto spot={spot} compact />
                         <span className="spot-copy"><small>{spot.category}</small><strong>{spot.name}</strong><em>{spot.description}</em></span>
                         <span className="spot-distance">{formatDistance(spot.distanceM)}<small>{visibleExploreCheckIns.some((checkIn) => checkIn.spotId === spot.id) ? "チェックイン済み" : "徒歩圏内"}</small></span>
                       </button>

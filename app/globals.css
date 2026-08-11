@@ -315,31 +315,38 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .refresh-spots:disabled { opacity: .72; }
 .offline-note { margin: 12px 0 0; }
-.checkin-panel {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  gap: 13px;
-  align-items: center;
+.spot-detail-card {
+  overflow: hidden;
   margin-top: 13px;
-  padding: 15px;
-  color: var(--white-paper);
-  background: var(--deep-indigo);
-  border: 1px solid rgba(250, 248, 242, .18);
-  border-radius: 10px;
+  background: var(--white-paper);
+  border: 1px solid var(--line);
+  border-radius: 11px;
   box-shadow: 0 9px 24px rgba(37, 37, 37, .13);
   scroll-margin: 86px;
 }
-.checkin-spot-icon { width: 42px; height: 42px; display: grid; place-items: center; background: rgba(250, 248, 242, .13); border-radius: 50%; }
-.checkin-copy { min-width: 0; display: flex; flex-direction: column; }
-.checkin-copy > small { color: #cbd2d8; font-size: 9px; }
-.checkin-copy > strong { overflow: hidden; margin: 2px 0; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
-.checkin-copy > span { display: flex; align-items: center; gap: 5px; color: #d7e2db; font-size: 9px; }
-.checkin-panel > button {
+.spot-detail-media { position: relative; height: 230px; background: #ded8cb; }
+.spot-detail-media > span { position: absolute; left: 14px; bottom: 13px; padding: 6px 10px; color: var(--white-paper); background: var(--vermilion); border-radius: 99px; font-size: 10px; font-weight: 800; }
+.spot-detail-photo { width: 100%; height: 100%; display: block; object-fit: cover; }
+.spot-photo-placeholder { width: 100%; height: 100%; display: grid; place-items: center; align-content: center; gap: 9px; color: var(--deep-indigo); background: #e1e4e2; }
+.spot-photo-placeholder small { font-size: 10px; }
+.spot-photo-placeholder.historic, .spot-photo-placeholder.heritage, .spot-photo-placeholder.shrine { color: #733d31; background: #e8ddd5; }
+.spot-photo-placeholder.nature { color: #3e5c48; background: #dce5dd; }
+.spot-detail-body { padding: 17px; }
+.spot-detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.spot-detail-heading small { color: var(--vermilion); font-size: 10px; font-weight: 800; }
+.spot-detail-heading h2 { margin: 3px 0 0; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 23px; }
+.spot-detail-heading > span { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; padding: 6px 8px; color: #3e5c48; background: #e0e9e1; border-radius: 6px; font-size: 9px; }
+.spot-detail-body > p { margin: 10px 0 4px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.spot-photo-credit { color: var(--taupe); font-size: 8px; text-decoration: none; }
+.spot-photo-credit:hover { text-decoration: underline; }
+.spot-checkin-button {
   min-height: 43px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
+  width: 100%;
+  margin-top: 14px;
   padding: 0 14px;
   color: var(--white-paper);
   background: var(--vermilion);
@@ -350,7 +357,7 @@ button { -webkit-tap-highlight-color: transparent; }
   white-space: nowrap;
   cursor: pointer;
 }
-.checkin-panel > button:disabled { opacity: .7; }
+.spot-checkin-button:disabled { opacity: .7; }
 .checkin-guide { display: flex; align-items: center; gap: 7px; margin-top: 12px; padding: 10px 12px; color: var(--indigo); background: rgba(54, 86, 111, .08); border: 1px solid rgba(54, 86, 111, .17); border-radius: 7px; font-size: 11px; }
 .recent-checkins { margin-top: 18px; }
 .section-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
@@ -366,11 +373,11 @@ button { -webkit-tap-highlight-color: transparent; }
 .spot-list { display: grid; gap: 10px; }
 .spot-card {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
   gap: 13px;
   align-items: center;
   width: 100%;
-  padding: 14px;
+  padding: 9px;
   color: var(--ink);
   text-align: left;
   background: var(--white-paper);
@@ -378,6 +385,7 @@ button { -webkit-tap-highlight-color: transparent; }
   border-radius: 9px;
   cursor: pointer;
 }
+.spot-card-photo, .spot-photo-placeholder.compact { width: 112px; height: 78px; display: block; border-radius: 7px; object-fit: cover; }
 .spot-card.selected { border-color: var(--vermilion); box-shadow: 0 0 0 1px var(--vermilion); }
 .spot-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; }
 .spot-icon.historic, .spot-icon.heritage { color: #733d31; background: #ead9d2; }
@@ -515,13 +523,14 @@ button { -webkit-tap-highlight-color: transparent; }
   .detail-stats .hero-stat strong { font-size: 26px; }
   .explore-map-wrap { min-height: 260px; }
   .preview-action { display: flex; width: 100%; margin-left: 0; }
-  .checkin-panel { grid-template-columns: 40px minmax(0, 1fr); padding: 12px; }
-  .checkin-spot-icon { width: 38px; height: 38px; }
-  .checkin-panel > button { grid-column: 1 / -1; width: 100%; }
+  .spot-detail-media { height: 190px; }
+  .spot-detail-heading { flex-direction: column; gap: 8px; }
+  .spot-detail-heading h2 { font-size: 20px; }
   .checkin-history-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .spot-card { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
-  .spot-icon { width: 38px; height: 38px; }
-  .spot-copy em { max-width: 46vw; }
+  .spot-card { grid-template-columns: 88px minmax(0, 1fr); gap: 10px; padding: 8px; }
+  .spot-card-photo, .spot-photo-placeholder.compact { width: 88px; height: 74px; }
+  .spot-copy em { max-width: 55vw; }
+  .spot-distance { grid-column: 2; flex-direction: row; align-items: center; justify-content: space-between; margin-top: -5px; }
   .spot-distance { font-size: 13px; }
   .my-map-heading { top: 12px; left: 10px; right: 10px; max-width: none; padding: 12px 14px; }
   .my-map-heading .page-heading p { display: none; }

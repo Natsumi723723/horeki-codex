@@ -39,6 +39,10 @@ export type ExploreSpot = {
   lng: number;
   distanceM: number;
   description: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  imageCredit?: string;
+  imageSourceUrl?: string;
 };
 
 export type CheckIn = {

@@ -78,6 +78,10 @@ export function fallbackSpots(lat: number, lng: number): ExploreSpot[] {
       lat: lat + 0.0042,
       lng: lng + 0.0018,
       description: "地域の歩みを静かに見守ってきた、小さな社寺です。",
+      imageUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Modern%20Torii.JPG?width=900",
+      imageAlt: "東京都内の神社の鳥居（カテゴリイメージ）",
+      imageCredit: "Wikimedia Commons / Asanagi（カテゴリイメージ）",
+      imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Modern_Torii.JPG",
     },
     {
       id: "fallback-2",
@@ -86,6 +90,10 @@ export function fallbackSpots(lat: number, lng: number): ExploreSpot[] {
       lat: lat - 0.0031,
       lng: lng + 0.0044,
       description: "かつて人々が行き交った道の記憶を伝える道標です。",
+      imageUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Shoin%20shrine%20main%20torii%20-%20taisho%20era.jpg?width=900",
+      imageAlt: "大正期の松陰神社の鳥居（歴史カテゴリのイメージ）",
+      imageCredit: "Wikimedia Commons（パブリックドメイン・カテゴリイメージ）",
+      imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Shoin_shrine_main_torii_-_taisho_era.jpg",
     },
     {
       id: "fallback-3",
@@ -94,6 +102,10 @@ export function fallbackSpots(lat: number, lng: number): ExploreSpot[] {
       lat: lat + 0.0065,
       lng: lng - 0.0029,
       description: "土地の暮らしや歴史を資料とともに紹介する施設です。",
+      imageUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Tokyo%2C%20sumida%20hokusai%20museum%2C%20esterno%2001.jpg?width=900",
+      imageAlt: "すみだ北斎美術館の外観（文化施設カテゴリのイメージ）",
+      imageCredit: "Wikimedia Commons / Sailko（カテゴリイメージ）",
+      imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Tokyo,_sumida_hokusai_museum,_esterno_01.jpg",
     },
     {
       id: "fallback-4",
@@ -102,6 +114,10 @@ export function fallbackSpots(lat: number, lng: number): ExploreSpot[] {
       lat: lat - 0.006,
       lng: lng - 0.0037,
       description: "季節の草木を眺めながら歩ける、静かな散策路です。",
+      imageUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Hinokichou-Park-pond.jpg?width=900",
+      imageAlt: "東京・檜町公園の池（公園カテゴリのイメージ）",
+      imageCredit: "Wikimedia Commons / Momotarou2012（カテゴリイメージ）",
+      imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Hinokichou-Park-pond.jpg",
     },
   ];
   return candidates
