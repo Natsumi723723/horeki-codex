@@ -62,6 +62,16 @@ const CATEGORY_META: Record<SpotCategory, { icon: typeof Landmark; className: st
   "公園・自然": { icon: TreePine, className: "nature" },
 };
 
+const UPDATE_POLL_MS = 60_000;
+
+function deploymentAssetSignature(root: ParentNode) {
+  return Array.from(root.querySelectorAll<HTMLScriptElement | HTMLLinkElement>("script[src], link[rel='stylesheet'][href]"))
+    .map((element) => element instanceof HTMLScriptElement ? element.src : element.href)
+    .filter((url) => url.includes("/assets/") || url.includes("/_next/") || url.includes("/_vinext/"))
+    .sort()
+    .join("|");
+}
+
 function toGeoPoint(position: GeolocationPosition): GeoPoint {
   return {
     lat: position.coords.latitude,
@@ -268,6 +278,8 @@ export default function HorekiApp() {
   const recordingEnabledRef = useRef(false);
   const forceBreakRef = useRef(false);
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+  const activeWalkRef = useRef<ActiveWalk | null>(null);
+  const updatePendingRef = useRef(false);
 
   const shownRecords = recordsLoaded && records.length === 0 ? SAMPLE_RECORDS : records;
   const isShowingSamples = recordsLoaded && records.length === 0;
@@ -305,8 +317,57 @@ export default function HorekiApp() {
     }
     void hydrate();
     if ("serviceWorker" in navigator && window.location.protocol === "https:") {
-      void navigator.serviceWorker.register("/sw.js");
+      void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((registration) => registration.update());
     }
+  }, []);
+
+  useEffect(() => {
+    activeWalkRef.current = activeWalk;
+    if (!activeWalk && updatePendingRef.current) window.location.reload();
+  }, [activeWalk]);
+
+  useEffect(() => {
+    const currentSignature = deploymentAssetSignature(document);
+    if (!currentSignature) return;
+    let disposed = false;
+    let checking = false;
+
+    const checkForUpdate = async () => {
+      if (checking || disposed || document.visibilityState !== "visible") return;
+      checking = true;
+      try {
+        const response = await fetch(`/?horeki-update=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const latestDocument = new DOMParser().parseFromString(await response.text(), "text/html");
+        const latestSignature = deploymentAssetSignature(latestDocument);
+        if (!latestSignature || latestSignature === currentSignature) return;
+        if (activeWalkRef.current) {
+          if (!updatePendingRef.current) {
+            updatePendingRef.current = true;
+            setToast("新しい版があります。歩行終了後に自動更新します");
+          }
+          return;
+        }
+        window.location.reload();
+      } catch {
+        // Offline or temporary network errors should never interrupt a walk.
+      } finally {
+        checking = false;
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void checkForUpdate();
+    };
+    const initialCheck = window.setTimeout(() => void checkForUpdate(), 8_000);
+    const interval = window.setInterval(() => void checkForUpdate(), UPDATE_POLL_MS);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      disposed = true;
+      window.clearTimeout(initialCheck);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {

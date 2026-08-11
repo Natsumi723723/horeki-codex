@@ -66,6 +66,11 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.doesNotMatch(app, /className="map-title-card"/);
   assert.match(app, /推定歩数/);
   assert.match(app, /stepCount:\s*estimateSteps/);
+  assert.match(app, /deploymentAssetSignature/);
+  assert.match(app, /UPDATE_POLL_MS = 60_000/);
+  assert.match(app, /visibilitychange/);
+  assert.match(app, /歩行終了後に自動更新します/);
+  assert.match(app, /cache:\s*"no-store"/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);
