@@ -1,9 +1,10 @@
-import type { ActiveWalk, WalkRecord } from "../types";
+import type { ActiveWalk, CheckIn, WalkRecord } from "../types";
 
 const DB_NAME = "horeki-local";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const RECORDS_STORE = "walkRecords";
 const STATE_STORE = "appState";
+const CHECK_INS_STORE = "checkIns";
 const ACTIVE_KEY = "activeWalk";
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -17,6 +18,12 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!database.objectStoreNames.contains(STATE_STORE)) {
         database.createObjectStore(STATE_STORE);
+      }
+      if (!database.objectStoreNames.contains(CHECK_INS_STORE)) {
+        const checkIns = database.createObjectStore(CHECK_INS_STORE, { keyPath: "id" });
+        checkIns.createIndex("checkedInAt", "checkedInAt");
+        checkIns.createIndex("spotId", "spotId");
+        checkIns.createIndex("walkId", "walkId");
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -55,4 +62,14 @@ export function getActiveWalk() {
 
 export function clearActiveWalk() {
   return transact<undefined>(STATE_STORE, "readwrite", (store) => store.delete(ACTIVE_KEY));
+}
+
+export function getCheckIns() {
+  return transact<CheckIn[]>(CHECK_INS_STORE, "readonly", (store) => store.getAll()).then((checkIns) =>
+    checkIns.sort((a, b) => b.checkedInAt - a.checkedInAt),
+  );
+}
+
+export function saveCheckIn(checkIn: CheckIn) {
+  return transact<IDBValidKey>(CHECK_INS_STORE, "readwrite", (store) => store.put(checkIn));
 }

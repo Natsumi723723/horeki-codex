@@ -49,12 +49,16 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.match(app, /startDemo/);
   assert.match(app, /GPS不要/);
   assert.match(app, /isSample:\s*activeWalk\.isDemo/);
+  assert.match(app, /この場所にチェックイン/);
+  assert.match(app, /saveCheckIn/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);
   assert.match(geo, /EARTH_RADIUS_M/);
   assert.match(database, /indexedDB\.open/);
   assert.match(database, /walkRecords/);
+  assert.match(database, /checkIns/);
+  assert.match(database, /DB_VERSION = 2/);
   assert.match(layout, /og\.png/);
   assert.match(packageJson, /"leaflet"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);

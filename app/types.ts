@@ -40,3 +40,15 @@ export type ExploreSpot = {
   distanceM: number;
   description: string;
 };
+
+export type CheckIn = {
+  id: string;
+  spotId: string;
+  spotName: string;
+  category: SpotCategory;
+  checkedInAt: number;
+  lat: number;
+  lng: number;
+  distanceFromCurrentM: number | null;
+  walkId: string | null;
+};

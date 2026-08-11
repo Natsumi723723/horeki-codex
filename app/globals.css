@@ -281,6 +281,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .detail-stats svg { color: var(--brown); margin-bottom: 8px; }
 .detail-stats strong { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 20px; }
 .detail-stats .hero-stat strong { font-size: 31px; }
+.detail-checkins { margin-top: 14px; padding: 16px; background: var(--white-paper); border: 1px solid var(--line); border-radius: 10px; }
+.detail-checkin-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 22px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.detail-checkin-row > span { color: var(--vermilion); font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 18px; font-weight: 700; }
+.detail-checkin-row > div { min-width: 0; display: flex; flex-direction: column; }
+.detail-checkin-row strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.detail-checkin-row small { color: var(--muted); font-size: 9px; }
+.detail-checkin-row > svg { color: #52715e; }
 
 .explore-map-wrap { position: relative; height: min(42vh, 390px); min-height: 300px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; }
 .refresh-spots {
@@ -306,6 +313,52 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .refresh-spots:disabled { opacity: .72; }
 .offline-note { margin: 12px 0 0; }
+.checkin-panel {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  margin-top: 13px;
+  padding: 15px;
+  color: var(--white-paper);
+  background: var(--deep-indigo);
+  border: 1px solid rgba(250, 248, 242, .18);
+  border-radius: 10px;
+  box-shadow: 0 9px 24px rgba(37, 37, 37, .13);
+  scroll-margin: 86px;
+}
+.checkin-spot-icon { width: 42px; height: 42px; display: grid; place-items: center; background: rgba(250, 248, 242, .13); border-radius: 50%; }
+.checkin-copy { min-width: 0; display: flex; flex-direction: column; }
+.checkin-copy > small { color: #cbd2d8; font-size: 9px; }
+.checkin-copy > strong { overflow: hidden; margin: 2px 0; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.checkin-copy > span { display: flex; align-items: center; gap: 5px; color: #d7e2db; font-size: 9px; }
+.checkin-panel > button {
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  color: var(--white-paper);
+  background: var(--vermilion);
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.checkin-panel > button:disabled { opacity: .7; }
+.checkin-guide { display: flex; align-items: center; gap: 7px; margin-top: 12px; padding: 10px 12px; color: var(--indigo); background: rgba(54, 86, 111, .08); border: 1px solid rgba(54, 86, 111, .17); border-radius: 7px; font-size: 11px; }
+.recent-checkins { margin-top: 18px; }
+.section-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.section-label > span { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: .03em; }
+.section-label > small { color: var(--muted); font-size: 9px; }
+.checkin-history-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.checkin-history-item { min-width: 0; display: flex; flex-direction: column; padding: 10px 11px; background: var(--white-paper); border: 1px solid var(--line); border-radius: 7px; }
+.checkin-history-item > span { color: var(--vermilion); font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 17px; font-weight: 700; }
+.checkin-history-item > strong { overflow: hidden; margin: 2px 0; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.checkin-history-item > small { color: var(--muted); font-size: 8px; }
 .category-strip { display: flex; gap: 8px; padding: 18px 0 12px; overflow-x: auto; scrollbar-width: none; }
 .category-strip span { display: flex; align-items: center; gap: 5px; padding: 7px 10px; color: var(--brown); background: #ece5d7; border: 1px solid #ded3c1; border-radius: 99px; font-size: 10px; white-space: nowrap; }
 .spot-list { display: grid; gap: 10px; }
@@ -457,6 +510,10 @@ button { -webkit-tap-highlight-color: transparent; }
   .detail-stats > div:nth-child(-n + 2) { border-top: 0; }
   .detail-stats .hero-stat strong { font-size: 26px; }
   .explore-map-wrap { min-height: 260px; }
+  .checkin-panel { grid-template-columns: 40px minmax(0, 1fr); padding: 12px; }
+  .checkin-spot-icon { width: 38px; height: 38px; }
+  .checkin-panel > button { grid-column: 1 / -1; width: 100%; }
+  .checkin-history-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .spot-card { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
   .spot-icon { width: 38px; height: 38px; }
   .spot-copy em { max-width: 46vw; }
