@@ -1,0 +1,11 @@
+{
+  "name": "歩歴（ほれき）",
+  "short_name": "歩歴",
+  "description": "歩いた街が、あなたの地図になる。GPS街歩き記録アプリ。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F0E6",
+  "theme_color": "#252525",
+  "lang": "ja",
+  "orientation": "portrait-primary"
+}

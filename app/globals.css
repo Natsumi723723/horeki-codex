@@ -1,0 +1,468 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --ink: #252525;
+  --deep-indigo: #243447;
+  --indigo: #36566f;
+  --paper: #f4f0e6;
+  --white-paper: #faf8f2;
+  --brown: #806044;
+  --taupe: #a99c8b;
+  --vermilion: #a64b3c;
+  --line: #d9d2c3;
+  --muted: #726d63;
+  --shadow: 0 12px 32px rgba(37, 37, 37, 0.12);
+  --topbar: 70px;
+  --bottom-nav: 78px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; background: var(--paper); color: var(--ink); }
+
+body {
+  font-family: "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+
+.app-shell { min-height: 100dvh; background: var(--paper); }
+.topbar {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  color: var(--white-paper);
+  background: var(--ink);
+  border-bottom: 1px solid #3b3b38;
+}
+
+.brand-mark { display: flex; align-items: center; gap: 11px; }
+.brand-seal {
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  color: var(--white-paper);
+  background: var(--vermilion);
+  border-radius: 5px;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.brand-mark > span:last-child { display: flex; align-items: baseline; gap: 9px; }
+.brand-mark b { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 22px; letter-spacing: .11em; }
+.brand-mark small { color: #bdb8ae; font-size: 9px; letter-spacing: .2em; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.privacy-chip, .signal-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; letter-spacing: .02em; }
+.privacy-chip { color: #d5d0c7; }
+.signal-chip { padding: 6px 9px; border-radius: 99px; }
+.signal-chip.good { color: #dbe9df; background: #33463b; }
+.signal-chip.weak { color: #f4dfbc; background: #5f4d31; }
+
+.app-content { padding-top: var(--topbar); padding-bottom: var(--bottom-nav); min-height: 100dvh; }
+.map-screen { position: relative; min-height: calc(100dvh - var(--topbar) - var(--bottom-nav)); overflow: hidden; }
+.full-map { position: absolute; inset: 0; }
+.map-canvas { width: 100%; height: 100%; min-height: 360px; background: #ddd8cb; }
+.map-canvas.compact { min-height: 0; }
+.leaflet-container { font-family: inherit; background: #ddd8cb; }
+.leaflet-control-attribution { font-size: 8px !important; opacity: .74; }
+.leaflet-bar a { color: var(--ink) !important; }
+
+.map-title-card {
+  position: absolute;
+  z-index: 500;
+  top: 18px;
+  left: 18px;
+  display: flex;
+  flex-direction: column;
+  padding: 13px 17px 14px;
+  background: rgba(250, 248, 242, .94);
+  border: 1px solid rgba(128, 96, 68, .25);
+  border-left: 3px solid var(--vermilion);
+  box-shadow: 0 8px 22px rgba(37, 37, 37, .12);
+  backdrop-filter: blur(8px);
+}
+.map-title-card small, .page-heading small, .detail-heading small { color: var(--vermilion); font-size: 9px; font-weight: 800; letter-spacing: .19em; }
+.map-title-card strong { margin-top: 2px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 20px; }
+.map-title-card span { color: var(--muted); margin-top: 2px; font-size: 11px; }
+.locate-button {
+  position: absolute;
+  z-index: 500;
+  right: 18px;
+  bottom: 250px;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  color: var(--deep-indigo);
+  background: var(--white-paper);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.gps-notice {
+  position: absolute;
+  z-index: 500;
+  top: 104px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  color: #4c3b23;
+  background: #f3e6cf;
+  border: 1px solid #d8c39e;
+  border-radius: 7px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.gps-notice.error { color: #6e2922; background: #f3ded9; border-color: #dab4ac; }
+
+.record-panel {
+  position: absolute;
+  z-index: 600;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 21px;
+  background: rgba(250, 248, 242, .97);
+  border: 1px solid rgba(128, 96, 68, .22);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(37, 37, 37, .2);
+  backdrop-filter: blur(12px);
+}
+.record-panel.is-active { border-top: 3px solid var(--vermilion); }
+.start-copy { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 17px; }
+.start-copy small { color: var(--brown); font-size: 9px; font-weight: 800; letter-spacing: .18em; }
+.start-copy h1 { margin: 4px 0 0; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: clamp(23px, 5vw, 30px); line-height: 1.35; letter-spacing: .03em; }
+.footprint-mark { color: var(--taupe); flex: 0 0 auto; }
+.primary-action, .secondary-action, .finish-action {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+.primary-action { color: var(--white-paper); background: var(--deep-indigo); border: 1px solid var(--deep-indigo); }
+.primary-action:hover { background: #1c2a3a; }
+.start-action { width: 100%; min-height: 57px; font-size: 17px; }
+.play-disc { width: 31px; height: 31px; display: grid; place-items: center; color: var(--deep-indigo); background: var(--white-paper); border-radius: 50%; }
+.record-hint { margin: 10px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; text-align: center; }
+.recording-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.live-dot, .pause-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.live-dot { background: var(--vermilion); box-shadow: 0 0 0 5px rgba(166, 75, 60, .12); animation: pulse 1.8s infinite; }
+.pause-dot { background: var(--brown); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 9px rgba(166, 75, 60, 0); } }
+.live-stats { display: grid; grid-template-columns: 1fr 1.2fr .75fr; gap: 8px; margin-bottom: 17px; text-align: center; }
+.live-stats > div { padding: 10px 5px; border-right: 1px solid var(--line); }
+.live-stats > div:last-child { border: 0; }
+.live-stats small, .cumulative-panel small, .detail-stats small { display: block; margin-bottom: 4px; color: var(--muted); font-size: 10px; }
+.live-stats strong { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: clamp(18px, 4vw, 27px); font-variant-numeric: tabular-nums; }
+.live-stats em, .cumulative-panel em, .detail-stats em { font-family: inherit; font-size: 11px; font-style: normal; font-weight: 500; }
+.record-controls { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+.secondary-action { color: var(--deep-indigo); background: transparent; border: 1px solid var(--indigo); }
+.finish-action { color: var(--white-paper); background: var(--vermilion); border: 1px solid var(--vermilion); }
+.compact-action { width: 100%; }
+
+.bottom-nav {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--bottom-nav);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 7px max(10px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  background: var(--white-paper);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 22px rgba(37, 37, 37, .06);
+}
+.bottom-nav button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #797469;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.bottom-nav button::before { content: ""; position: absolute; top: -7px; left: 28%; right: 28%; height: 3px; background: transparent; }
+.bottom-nav button.active { color: var(--deep-indigo); }
+.bottom-nav button.active::before { background: var(--vermilion); }
+.bottom-nav button > span { display: flex; flex-direction: column; align-items: flex-start; font-size: 12px; font-weight: 700; line-height: 1.2; }
+.bottom-nav small { margin-top: 2px; color: var(--taupe); font-size: 7px; letter-spacing: .1em; }
+
+.page-view { width: min(960px, 100%); margin: 0 auto; padding: 32px 20px 48px; }
+.page-heading { margin-bottom: 26px; }
+.page-heading h1, .detail-heading h1 { margin: 5px 0 5px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: clamp(27px, 5vw, 39px); line-height: 1.32; letter-spacing: .03em; }
+.page-heading p, .detail-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.sample-note, .offline-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: -10px 0 18px;
+  padding: 10px 12px;
+  color: #645743;
+  background: #ece5d7;
+  border-left: 3px solid var(--brown);
+  font-size: 11px;
+}
+.record-list { display: grid; gap: 13px; }
+.record-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) 28px;
+  min-height: 132px;
+  padding: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-align: left;
+  background: var(--white-paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.record-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(37, 37, 37, .09); }
+.record-card-map { height: 132px; pointer-events: none; }
+.record-card-content { align-self: center; padding: 16px 22px; }
+.record-date { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.record-date em, .sample-badge { padding: 3px 6px; color: var(--brown); background: #e9e1d2; border-radius: 3px; font-size: 9px; font-style: normal; font-weight: 700; }
+.record-card-content > strong { display: block; margin: 5px 0 9px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 29px; }
+.record-meta { display: flex; gap: 18px; color: var(--muted); font-size: 11px; }
+.record-meta span { display: flex; align-items: center; gap: 5px; }
+.record-chevron { align-self: center; color: var(--taupe); }
+
+.back-button { display: flex; align-items: center; gap: 5px; margin: 0 0 20px -5px; color: var(--indigo); background: transparent; border: 0; font-size: 12px; font-weight: 700; cursor: pointer; }
+.detail-heading { margin-bottom: 20px; }
+.detail-map { height: min(48vh, 430px); min-height: 320px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; }
+.detail-stats { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); margin-top: 14px; background: var(--white-paper); border: 1px solid var(--line); border-radius: 10px; }
+.detail-stats > div { min-height: 108px; display: flex; flex-direction: column; justify-content: center; padding: 18px; border-left: 1px solid var(--line); }
+.detail-stats > div:first-child { border-left: 0; }
+.detail-stats svg { color: var(--brown); margin-bottom: 8px; }
+.detail-stats strong { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 20px; }
+.detail-stats .hero-stat strong { font-size: 31px; }
+
+.explore-map-wrap { position: relative; height: min(42vh, 390px); min-height: 300px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; }
+.refresh-spots {
+  position: absolute;
+  z-index: 500;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  color: var(--white-paper);
+  background: var(--deep-indigo);
+  border: 0;
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.refresh-spots:disabled { opacity: .72; }
+.offline-note { margin: 12px 0 0; }
+.category-strip { display: flex; gap: 8px; padding: 18px 0 12px; overflow-x: auto; scrollbar-width: none; }
+.category-strip span { display: flex; align-items: center; gap: 5px; padding: 7px 10px; color: var(--brown); background: #ece5d7; border: 1px solid #ded3c1; border-radius: 99px; font-size: 10px; white-space: nowrap; }
+.spot-list { display: grid; gap: 10px; }
+.spot-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  width: 100%;
+  padding: 14px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--white-paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.spot-card.selected { border-color: var(--vermilion); box-shadow: 0 0 0 1px var(--vermilion); }
+.spot-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; }
+.spot-icon.historic, .spot-icon.heritage { color: #733d31; background: #ead9d2; }
+.spot-icon.shrine { color: #7a352c; background: #edddd8; }
+.spot-icon.culture { color: var(--deep-indigo); background: #dde3e8; }
+.spot-icon.nature { color: #3e5c48; background: #dce5dd; }
+.spot-copy { min-width: 0; display: flex; flex-direction: column; }
+.spot-copy small { color: var(--vermilion); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.spot-copy strong { margin: 2px 0 4px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 16px; }
+.spot-copy em { overflow: hidden; color: var(--muted); font-size: 10px; font-style: normal; line-height: 1.45; text-overflow: ellipsis; white-space: nowrap; }
+.spot-distance { display: flex; flex-direction: column; color: var(--deep-indigo); font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 15px; font-weight: 700; text-align: right; }
+.spot-distance small { margin-top: 2px; color: var(--taupe); font-family: inherit; font-size: 8px; font-weight: 500; }
+.spot-skeleton { height: 76px; background: #e7e1d5; border: 1px solid var(--line); border-radius: 9px; animation: breathe 1.3s infinite alternate; }
+@keyframes breathe { to { opacity: .55; } }
+.explore-permission { padding: 30px 20px; background: var(--white-paper); border: 1px solid var(--line); border-radius: 10px; text-align: center; }
+.empty-state { max-width: 380px; margin: 0 auto; }
+.empty-icon { width: 48px; height: 48px; display: grid; place-items: center; margin: 0 auto 13px; color: var(--indigo); background: #e1e6e8; border-radius: 50%; }
+.empty-state h3 { margin: 0 0 6px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 19px; }
+.empty-state p { margin: 0; color: var(--muted); font-size: 12px; }
+.inline-action { min-height: 46px; margin-top: 18px; padding: 0 20px; }
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.my-map-view { position: relative; min-height: calc(100dvh - var(--topbar) - var(--bottom-nav)); }
+.my-map-heading { position: absolute; z-index: 500; top: 20px; left: 20px; max-width: 470px; padding: 16px 18px; background: rgba(250, 248, 242, .94); border-left: 3px solid var(--vermilion); box-shadow: var(--shadow); backdrop-filter: blur(8px); }
+.my-map-heading .page-heading { margin: 0; }
+.my-map-heading .page-heading h1 { font-size: clamp(23px, 4vw, 32px); }
+.my-map-heading .sample-badge { display: inline-block; margin-top: 10px; }
+.my-map-canvas { position: absolute; inset: 0; }
+.cumulative-panel {
+  position: absolute;
+  z-index: 500;
+  left: 20px;
+  bottom: 20px;
+  width: min(450px, calc(100% - 40px));
+  padding: 18px;
+  color: var(--white-paper);
+  background: rgba(36, 52, 71, .96);
+  border: 1px solid rgba(250, 248, 242, .18);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+.cumulative-main { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 13px; border-bottom: 1px solid rgba(250, 248, 242, .2); }
+.cumulative-main small, .cumulative-sub small { color: #c9cdd1; }
+.cumulative-main strong { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 30px; }
+.cumulative-sub { display: grid; grid-template-columns: 1fr 1fr; margin-top: 12px; }
+.cumulative-sub > div + div { padding-left: 18px; border-left: 1px solid rgba(250, 248, 242, .2); }
+.cumulative-sub strong { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 22px; }
+.cumulative-panel p { margin: 12px 0 0; color: #c9cdd1; font-size: 10px; line-height: 1.45; }
+
+.horeki-marker-shell { background: none; border: 0; }
+.horeki-spot-marker {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--white-paper);
+  background: var(--brown);
+  border: 3px solid var(--white-paper);
+  border-radius: 50% 50% 50% 7px;
+  box-shadow: 0 4px 10px rgba(37, 37, 37, .25);
+  transform: rotate(-45deg);
+  font-size: 12px;
+  font-weight: 800;
+}
+.horeki-spot-marker.is-selected { background: var(--vermilion); transform: rotate(-45deg) scale(1.12); }
+.horeki-spot-marker::first-letter { transform: rotate(45deg); }
+.toast {
+  position: fixed;
+  z-index: 2000;
+  left: 50%;
+  bottom: calc(var(--bottom-nav) + 16px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 12px 17px;
+  color: var(--white-paper);
+  background: var(--ink);
+  border: 1px solid #4a4842;
+  border-radius: 7px;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  :root { --bottom-nav: 74px; }
+  .topbar { padding-left: 34px; padding-right: 34px; }
+  .bottom-nav { left: 50%; right: auto; width: min(680px, calc(100% - 40px)); transform: translateX(-50%); bottom: 12px; border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); }
+  .map-screen, .my-map-view { min-height: calc(100dvh - var(--topbar)); }
+  .record-panel { bottom: 32px; }
+  .locate-button { bottom: 270px; }
+  .app-content { padding-bottom: 0; }
+  .page-view { padding-bottom: 110px; }
+}
+
+@media (max-width: 640px) {
+  :root { --topbar: 60px; --bottom-nav: 70px; }
+  .topbar { padding: 0 14px; }
+  .brand-seal { width: 32px; height: 32px; font-size: 17px; }
+  .brand-mark b { font-size: 19px; }
+  .brand-mark small, .privacy-chip { display: none; }
+  .signal-chip { font-size: 9px; }
+  .bottom-nav { padding-left: 2px; padding-right: 2px; }
+  .bottom-nav button { flex-direction: column; gap: 2px; }
+  .bottom-nav button > span { align-items: center; font-size: 10px; }
+  .bottom-nav small { display: none; }
+  .record-panel { left: 10px; right: 10px; bottom: 10px; padding: 17px; }
+  .locate-button { right: 12px; bottom: 250px; width: 44px; height: 44px; }
+  .map-title-card { top: 11px; left: 10px; max-width: calc(100% - 72px); padding: 10px 13px; }
+  .map-title-card strong { font-size: 17px; }
+  .map-title-card span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .record-panel.is-active { padding-top: 14px; }
+  .recording-status { margin-bottom: 10px; }
+  .live-stats { margin-bottom: 12px; }
+  .live-stats > div { padding: 6px 2px; }
+  .record-controls { grid-template-columns: 1fr 1.35fr; }
+  .record-controls button { min-height: 47px; font-size: 12px; }
+  .page-view { padding: 25px 14px 36px; }
+  .page-heading { margin-bottom: 20px; }
+  .record-card { grid-template-columns: 108px minmax(0, 1fr) 20px; min-height: 112px; }
+  .record-card-map { height: 112px; }
+  .record-card-content { padding: 12px 10px; }
+  .record-card-content > strong { font-size: 23px; }
+  .record-meta { flex-direction: column; gap: 3px; }
+  .record-date span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-map { min-height: 270px; height: 38vh; }
+  .detail-stats { grid-template-columns: 1fr 1fr; }
+  .detail-stats > div { min-height: 96px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .detail-stats > div:nth-child(odd) { border-left: 0; }
+  .detail-stats > div:nth-child(-n + 2) { border-top: 0; }
+  .detail-stats .hero-stat strong { font-size: 26px; }
+  .explore-map-wrap { min-height: 260px; }
+  .spot-card { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
+  .spot-icon { width: 38px; height: 38px; }
+  .spot-copy em { max-width: 46vw; }
+  .spot-distance { font-size: 13px; }
+  .my-map-heading { top: 12px; left: 10px; right: 10px; max-width: none; padding: 12px 14px; }
+  .my-map-heading .page-heading p { display: none; }
+  .cumulative-panel { left: 10px; bottom: 10px; width: calc(100% - 20px); padding: 14px; }
+  .cumulative-main strong { font-size: 26px; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #20211f; --white-paper: #292a27; --ink: #f2eee5; --line: #474740; --muted: #b7b1a6; }
+  .topbar { background: #161715; }
+  .record-panel, .map-title-card, .my-map-heading { background: rgba(41, 42, 39, .96); }
+  .primary-action { background: #496981; }
+  .record-card-map, .map-canvas, .leaflet-container { background: #45443f; }
+  .sample-note, .offline-note, .category-strip span { background: #3b3933; }
+  .spot-icon.historic, .spot-icon.heritage, .spot-icon.shrine { background: #4a3632; }
+  .spot-icon.culture { background: #313d48; }
+  .spot-icon.nature { background: #334038; }
+  .empty-icon { background: #37434b; }
+  .record-date em, .sample-badge { background: #423b31; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
