@@ -42,6 +42,7 @@ import { createSampleCheckIns, fallbackSpots, SAMPLE_CHECK_INS, SAMPLE_RECORDS }
 import type { ActiveWalk, CheckIn, ExploreSpot, GeoPoint, SpotCategory, WalkRecord } from "../types";
 
 type Tab = "map" | "records" | "explore" | "my-map";
+type RecordView = "walks" | "checkins";
 type GeoState = "idle" | "locating" | "ready" | "weak" | "denied" | "unavailable";
 
 const TAB_ITEMS: { id: Tab; label: string; overline: string; icon: typeof MapIcon }[] = [
@@ -250,6 +251,7 @@ export default function HorekiApp() {
   const [geoState, setGeoState] = useState<GeoState>("idle");
   const [now, setNow] = useState(Date.now());
   const [selectedRecord, setSelectedRecord] = useState<WalkRecord | null>(null);
+  const [recordView, setRecordView] = useState<RecordView>("walks");
   const [spots, setSpots] = useState<ExploreSpot[]>([]);
   const [spotsLoading, setSpotsLoading] = useState(false);
   const [spotsOffline, setSpotsOffline] = useState(false);
@@ -267,6 +269,15 @@ export default function HorekiApp() {
 
   const shownRecords = recordsLoaded && records.length === 0 ? SAMPLE_RECORDS : records;
   const isShowingSamples = recordsLoaded && records.length === 0;
+  const timelineCheckIns = useMemo(() => {
+    const source = checkIns.length > 0
+      ? checkIns
+      : demoRecordCheckIns.length > 0
+        ? demoRecordCheckIns
+        : SAMPLE_CHECK_INS;
+    return [...source].sort((a, b) => b.checkedInAt - a.checkedInAt);
+  }, [checkIns, demoRecordCheckIns]);
+  const isShowingCheckInSamples = checkIns.length === 0;
 
   useEffect(() => {
     async function hydrate() {
@@ -702,21 +713,42 @@ export default function HorekiApp() {
               />
             ) : (
               <>
-                <PageHeading eyebrow="WALK RECORD" title="歩いた日を、振り返る。" description="新しい街歩きから順に記録しています。" />
-                {isShowingSamples && <div className="sample-note">まだ記録がないため、表示イメージをサンプルで紹介しています。</div>}
-                <div className="record-list">
-                  {shownRecords.map((record) => (
-                    <button className="record-card" type="button" key={record.id} onClick={() => setSelectedRecord(record)}>
-                      <div className="record-card-map"><HorekiMap routes={[{ points: record.points }]} compact /></div>
-                      <div className="record-card-content">
-                        <div className="record-date"><span>{formatDate(record.startedAt)}</span>{record.isSample && <em>サンプル</em>}</div>
-                        <strong>{formatDistance(record.distanceM)}</strong>
-                        <div className="record-meta"><span><Clock3 size={15} /> {formatDuration(record.durationMs)}</span><span>{formatTime(record.startedAt)} 出発</span></div>
-                      </div>
-                      <ChevronRight className="record-chevron" size={21} />
-                    </button>
-                  ))}
+                <PageHeading
+                  eyebrow={recordView === "walks" ? "WALK RECORD" : "CHECK-IN TIMELINE"}
+                  title={recordView === "walks" ? "歩いた日を、振り返る。" : "出会った場所を、たどる。"}
+                  description={recordView === "walks" ? "新しい街歩きから順に記録しています。" : "チェックインした瞬間を、日付で区切らず新しい順に並べています。"}
+                />
+                <div className="record-view-switch" aria-label="記録の表示切り替え">
+                  <button type="button" className={recordView === "walks" ? "active" : ""} aria-pressed={recordView === "walks"} onClick={() => setRecordView("walks")}>
+                    <Route size={17} /> 歩行記録
+                  </button>
+                  <button type="button" className={recordView === "checkins" ? "active" : ""} aria-pressed={recordView === "checkins"} onClick={() => setRecordView("checkins")}>
+                    <MapPin size={17} /> チェックイン <small>{timelineCheckIns.length}</small>
+                  </button>
                 </div>
+                {recordView === "walks" ? (
+                  <>
+                    {isShowingSamples && <div className="sample-note">まだ記録がないため、表示イメージをサンプルで紹介しています。</div>}
+                    <div className="record-list">
+                      {shownRecords.map((record) => (
+                        <button className="record-card" type="button" key={record.id} onClick={() => setSelectedRecord(record)}>
+                          <div className="record-card-map"><HorekiMap routes={[{ points: record.points }]} compact /></div>
+                          <div className="record-card-content">
+                            <div className="record-date"><span>{formatDate(record.startedAt)}</span>{record.isSample && <em>サンプル</em>}</div>
+                            <strong>{formatDistance(record.distanceM)}</strong>
+                            <div className="record-meta"><span><Clock3 size={15} /> {formatDuration(record.durationMs)}</span><span>{formatTime(record.startedAt)} 出発</span></div>
+                          </div>
+                          <ChevronRight className="record-chevron" size={21} />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {isShowingCheckInSamples && <div className="sample-note">まだ実際のチェックインがないため、タイムラインの見え方をサンプルで紹介しています。</div>}
+                    <CheckInTimeline checkIns={timelineCheckIns} isSample={isShowingCheckInSamples} />
+                  </>
+                )}
               </>
             )}
           </div>
@@ -856,6 +888,33 @@ export default function HorekiApp() {
 function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return (
     <div className="page-heading"><small>{eyebrow}</small><h1>{title}</h1><p>{description}</p></div>
+  );
+}
+
+function CheckInTimeline({ checkIns, isSample }: { checkIns: CheckIn[]; isSample: boolean }) {
+  if (checkIns.length === 0) {
+    return <EmptyState icon={MapPin} title="チェックインはまだありません">「見つける」で場所を選び、チェックインするとここに時刻順で残ります。</EmptyState>;
+  }
+  return (
+    <section className="checkin-timeline" aria-label="チェックインのタイムライン">
+      <div className="timeline-summary"><span>{checkIns.length} CHECK-INS</span><small>新しい順</small></div>
+      <div className="timeline-stream">
+        {checkIns.map((checkIn) => (
+          <article className="timeline-entry" key={checkIn.id}>
+            <time className="timeline-when" dateTime={new Date(checkIn.checkedInAt).toISOString()}>
+              <span>{formatDate(checkIn.checkedInAt)}</span>
+              <strong>{formatTime(checkIn.checkedInAt)}</strong>
+            </time>
+            <div className="timeline-rail" aria-hidden="true"><span><CheckCircle2 size={15} /></span></div>
+            <div className="timeline-place">
+              <div className="timeline-labels"><span>{checkIn.category}</span><em>{checkIn.walkId ? "街歩き中" : "単独チェックイン"}</em>{isSample && <em>サンプル</em>}</div>
+              <h2>{checkIn.spotName}</h2>
+              <p><MapPin size={13} /> この場所にチェックインしました</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

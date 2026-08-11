@@ -57,6 +57,10 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.match(app, /wikimedia_commons/);
   assert.match(app, /loading="lazy"/);
   assert.match(app, /spot-detail-photo/);
+  assert.match(app, /CHECK-IN TIMELINE/);
+  assert.match(app, /チェックインのタイムライン/);
+  assert.match(app, /日付で区切らず新しい順/);
+  assert.match(app, /単独チェックイン/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);
