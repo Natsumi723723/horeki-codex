@@ -51,6 +51,8 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.match(app, /isSample:\s*activeWalk\.isDemo/);
   assert.match(app, /この場所にチェックイン/);
   assert.match(app, /saveCheckIn/);
+  assert.match(app, /サンプルスポットで見る/);
+  assert.match(app, /createSampleCheckIns/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);

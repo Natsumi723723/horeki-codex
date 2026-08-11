@@ -1,4 +1,4 @@
-import type { ExploreSpot, WalkRecord } from "../types";
+import type { CheckIn, ExploreSpot, GeoPoint, WalkRecord } from "../types";
 import { distanceBetween } from "./geo";
 
 const DAY = 86_400_000;
@@ -39,6 +39,35 @@ export const SAMPLE_RECORDS: WalkRecord[] = [0, 2].map((offset, recordIndex) => 
     isSample: true,
   };
 });
+
+const SAMPLE_CHECKPOINTS = [
+  { pointIndex: 3, minuteOffset: 27, spotId: "sample-bridge", spotName: "旧街道の道標", category: "史跡" as const },
+  { pointIndex: 6, minuteOffset: 54, spotId: "sample-shrine", spotName: "まちの鎮守さま", category: "神社・寺" as const },
+];
+
+export function createSampleCheckIns(walkId: string, startedAt: number, points: GeoPoint[]): CheckIn[] {
+  return SAMPLE_CHECKPOINTS.flatMap((checkpoint) => {
+    const point = points[checkpoint.pointIndex];
+    if (!point) return [];
+    return [{
+      id: `${walkId}-${checkpoint.spotId}`,
+      spotId: checkpoint.spotId,
+      spotName: checkpoint.spotName,
+      category: checkpoint.category,
+      checkedInAt: startedAt + checkpoint.minuteOffset * 60_000,
+      lat: point.lat,
+      lng: point.lng,
+      distanceFromCurrentM: 0,
+      walkId,
+    } satisfies CheckIn];
+  });
+}
+
+export const SAMPLE_CHECK_INS = createSampleCheckIns(
+  SAMPLE_RECORDS[0].id,
+  SAMPLE_RECORDS[0].startedAt,
+  SAMPLE_RECORDS[0].points,
+);
 
 export function fallbackSpots(lat: number, lng: number): ExploreSpot[] {
   const candidates: Omit<ExploreSpot, "distanceM">[] = [

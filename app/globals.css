@@ -195,6 +195,8 @@ button { -webkit-tap-highlight-color: transparent; }
 .live-stats small, .cumulative-panel small, .detail-stats small { display: block; margin-bottom: 4px; color: var(--muted); font-size: 10px; }
 .live-stats strong { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: clamp(18px, 4vw, 27px); font-variant-numeric: tabular-nums; }
 .live-stats em, .cumulative-panel em, .detail-stats em { font-family: inherit; font-size: 11px; font-style: normal; font-weight: 500; }
+.demo-checkins-live { display: flex; gap: 7px; margin: -5px 0 12px; overflow-x: auto; scrollbar-width: none; }
+.demo-checkins-live span { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; padding: 6px 8px; color: #526c59; background: #e4ece5; border: 1px solid #ccd8ce; border-radius: 99px; font-size: 9px; font-weight: 700; }
 .record-controls { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
 .secondary-action { color: var(--deep-indigo); background: transparent; border: 1px solid var(--indigo); }
 .finish-action { color: var(--white-paper); background: var(--vermilion); border: 1px solid var(--vermilion); }
@@ -396,6 +398,8 @@ button { -webkit-tap-highlight-color: transparent; }
 .empty-state h3 { margin: 0 0 6px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 19px; }
 .empty-state p { margin: 0; color: var(--muted); font-size: 12px; }
 .inline-action { min-height: 46px; margin-top: 18px; padding: 0 20px; }
+.preview-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 0 8px; padding: 0 18px; color: var(--deep-indigo); background: transparent; border: 1px solid var(--indigo); border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.gps-help { margin: 12px auto 0; color: var(--muted); font-size: 9px; }
 .spin { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -510,6 +514,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .detail-stats > div:nth-child(-n + 2) { border-top: 0; }
   .detail-stats .hero-stat strong { font-size: 26px; }
   .explore-map-wrap { min-height: 260px; }
+  .preview-action { display: flex; width: 100%; margin-left: 0; }
   .checkin-panel { grid-template-columns: 40px minmax(0, 1fr); padding: 12px; }
   .checkin-spot-icon { width: 38px; height: 38px; }
   .checkin-panel > button { grid-column: 1 / -1; width: 100%; }

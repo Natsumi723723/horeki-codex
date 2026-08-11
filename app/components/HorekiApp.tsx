@@ -38,7 +38,7 @@ import {
   formatDistance,
   formatDuration,
 } from "../lib/geo";
-import { fallbackSpots, SAMPLE_RECORDS } from "../lib/sample-data";
+import { createSampleCheckIns, fallbackSpots, SAMPLE_CHECK_INS, SAMPLE_RECORDS } from "../lib/sample-data";
 import type { ActiveWalk, CheckIn, ExploreSpot, GeoPoint, SpotCategory, WalkRecord } from "../types";
 
 type Tab = "map" | "records" | "explore" | "my-map";
@@ -177,6 +177,9 @@ export default function HorekiApp() {
   const [spotsOffline, setSpotsOffline] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<ExploreSpot | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+  const [demoRecordCheckIns, setDemoRecordCheckIns] = useState<CheckIn[]>([]);
+  const [previewCheckIns, setPreviewCheckIns] = useState<CheckIn[]>([]);
+  const [explorePreview, setExplorePreview] = useState(false);
   const [checkInSaving, setCheckInSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -291,8 +294,21 @@ export default function HorekiApp() {
   }, [handlePosition, onGeoError, stopWatching]);
 
   const locateOnce = () => {
+    setExplorePreview(false);
+    setPreviewCheckIns([]);
+    setSpots([]);
+    setSelectedSpot(null);
     recordingEnabledRef.current = false;
     void beginWatching(false);
+  };
+
+  const showExplorePreview = () => {
+    const previewPosition = SAMPLE_RECORDS[0].points[0];
+    setExplorePreview(true);
+    setSelectedSpot(null);
+    setSpots(fallbackSpots(previewPosition.lat, previewPosition.lng));
+    setSpotsOffline(true);
+    setGeoState("idle");
   };
 
   const startWalk = async () => {
@@ -382,6 +398,7 @@ export default function HorekiApp() {
       isSample: activeWalk.isDemo,
     };
     if (activeWalk.isDemo) {
+      setDemoRecordCheckIns(createSampleCheckIns(record.id, record.startedAt, record.points));
       setActiveWalk(null);
       setCurrentPosition(null);
       setSelectedRecord(record);
@@ -409,6 +426,11 @@ export default function HorekiApp() {
   const demoComplete = Boolean(
     activeWalk?.isDemo && activeWalk.points.length >= SAMPLE_RECORDS[0].points.length,
   );
+  const activeDemoCheckIns = activeWalk?.isDemo
+    ? createSampleCheckIns(activeWalk.id, activeWalk.startedAt, activeWalk.points)
+    : [];
+  const explorePosition = currentPosition ?? (explorePreview ? SAMPLE_RECORDS[0].points[0] : null);
+  const visibleExploreCheckIns = explorePreview ? previewCheckIns : checkIns;
 
   useEffect(() => {
     if (!activeWalk?.isDemo || activeWalk.status !== "recording") return;
@@ -468,6 +490,7 @@ export default function HorekiApp() {
   const checkInToSpot = async () => {
     if (!selectedSpot || checkInSaving) return;
     setCheckInSaving(true);
+    const isPreviewCheckIn = explorePreview && !currentPosition;
     const checkIn: CheckIn = {
       id: crypto.randomUUID(),
       spotId: selectedSpot.id,
@@ -476,9 +499,15 @@ export default function HorekiApp() {
       checkedInAt: Date.now(),
       lat: selectedSpot.lat,
       lng: selectedSpot.lng,
-      distanceFromCurrentM: currentPosition ? distanceBetween(currentPosition, selectedSpot) : null,
+      distanceFromCurrentM: explorePosition ? distanceBetween(explorePosition, selectedSpot) : null,
       walkId: activeWalk && !activeWalk.isDemo ? activeWalk.id : null,
     };
+    if (isPreviewCheckIn) {
+      setPreviewCheckIns((previous) => [checkIn, ...previous]);
+      setToast(`${formatTime(checkIn.checkedInAt)}のサンプルチェックインを表示しました`);
+      setCheckInSaving(false);
+      return;
+    }
     try {
       await saveCheckIn(checkIn);
       setCheckIns((previous) => [checkIn, ...previous]);
@@ -491,7 +520,7 @@ export default function HorekiApp() {
   };
 
   const selectedSpotCheckIn = selectedSpot
-    ? checkIns.find((checkIn) => checkIn.spotId === selectedSpot.id)
+    ? visibleExploreCheckIns.find((checkIn) => checkIn.spotId === selectedSpot.id)
     : undefined;
 
   return (
@@ -512,6 +541,15 @@ export default function HorekiApp() {
               <HorekiMap
                 currentPosition={currentPosition}
                 routes={activeWalk?.points.length ? [{ points: activeWalk.points }] : []}
+                spots={activeDemoCheckIns.map((checkIn) => ({
+                  id: checkIn.id,
+                  name: `${formatTime(checkIn.checkedInAt)} ${checkIn.spotName}`,
+                  category: checkIn.category,
+                  lat: checkIn.lat,
+                  lng: checkIn.lng,
+                  distanceM: 0,
+                  description: "デモのチェックイン地点",
+                }))}
                 followCurrent={Boolean(activeWalk)}
               />
               <div className="map-title-card">
@@ -540,6 +578,11 @@ export default function HorekiApp() {
                     <div><small>歩行時間</small><strong>{formatClockDuration(activeDuration)}</strong></div>
                     <div><small>取得地点</small><strong>{activeWalk.points.length}<em>点</em></strong></div>
                   </div>
+                  {activeDemoCheckIns.length > 0 && (
+                    <div className="demo-checkins-live">
+                      {activeDemoCheckIns.map((checkIn) => <span key={checkIn.id}><CheckCircle2 size={13} /> {formatTime(checkIn.checkedInAt)} {checkIn.spotName}</span>)}
+                    </div>
+                  )}
                   <div className="record-controls">
                     {demoComplete ? (
                       <button className="secondary-action" type="button" onClick={startDemo}><Play size={19} fill="currentColor" /> もう一度</button>
@@ -574,7 +617,11 @@ export default function HorekiApp() {
         {tab === "records" && (
           <div className="page-view">
             {selectedRecord ? (
-              <RecordDetail record={selectedRecord} checkIns={checkIns} onBack={() => setSelectedRecord(null)} />
+              <RecordDetail
+                record={selectedRecord}
+                checkIns={selectedRecord.isSample ? [...checkIns, ...SAMPLE_CHECK_INS, ...demoRecordCheckIns] : checkIns}
+                onBack={() => setSelectedRecord(null)}
+              />
             ) : (
               <>
                 <PageHeading eyebrow="WALK RECORD" title="歩いた日を、振り返る。" description="新しい街歩きから順に記録しています。" />
@@ -600,20 +647,22 @@ export default function HorekiApp() {
         {tab === "explore" && (
           <div className="page-view explore-view">
             <PageHeading eyebrow="NEARBY STORIES" title="寄り道で、街を知る。" description="史跡や社寺を選んで、自分の意思でチェックインできます。" />
-            {!currentPosition ? (
+            {!explorePosition ? (
               <div className="explore-permission">
                 <EmptyState icon={MapPin} title="現在地から探します">位置情報はスポットとの距離計算にだけ使用します。</EmptyState>
                 <button className="primary-action inline-action" type="button" onClick={locateOnce}><LocateFixed size={19} /> 現在地を確認</button>
+                <button className="preview-action" type="button" onClick={showExplorePreview}><Compass size={18} /> サンプルスポットで見る</button>
+                <p className="gps-help">Codex内ブラウザなど、現在地を取得できない環境でも見た目を確認できます。</p>
               </div>
             ) : (
               <>
                 <div className="explore-map-wrap">
-                  <HorekiMap currentPosition={currentPosition} spots={spots} selectedSpotId={selectedSpot?.id} onSpotSelect={openSpot} />
-                  <button type="button" className="refresh-spots" onClick={loadSpots} disabled={spotsLoading}>
-                    {spotsLoading ? <LoaderCircle size={17} className="spin" /> : <LocateFixed size={17} />} この周辺を検索
+                  <HorekiMap currentPosition={explorePosition} spots={spots} selectedSpotId={selectedSpot?.id} onSpotSelect={openSpot} />
+                  <button type="button" className="refresh-spots" onClick={explorePreview ? locateOnce : loadSpots} disabled={spotsLoading}>
+                    {spotsLoading ? <LoaderCircle size={17} className="spin" /> : <LocateFixed size={17} />} {explorePreview ? "実際の現在地で探す" : "この周辺を検索"}
                   </button>
                 </div>
-                {spotsOffline && <div className="offline-note"><WifiOff size={16} /> オフラインのため、周辺スポットはサンプル表示です。</div>}
+                {spotsOffline && <div className="offline-note"><WifiOff size={16} /> {explorePreview ? "GPSを使わないサンプルスポット表示です。チェックインも保存されません。" : "オフラインのため、周辺スポットはサンプル表示です。"}</div>}
                 {selectedSpot && (
                   <section id="spot-checkin-panel" className="checkin-panel" aria-label="選択したスポットへのチェックイン">
                     <div className="checkin-spot-icon"><MapPin size={21} /></div>
@@ -631,11 +680,11 @@ export default function HorekiApp() {
                 {!selectedSpot && spots.length > 0 && (
                   <div className="checkin-guide"><CheckCircle2 size={16} /> 地図の印またはスポット名を選ぶと、チェックインできます。</div>
                 )}
-                {checkIns.length > 0 && (
+                {visibleExploreCheckIns.length > 0 && (
                   <section className="recent-checkins">
-                    <div className="section-label"><span><CalendarDays size={15} /> 最近のチェックイン</span><small>この端末に保存</small></div>
+                    <div className="section-label"><span><CalendarDays size={15} /> 最近のチェックイン</span><small>{explorePreview ? "サンプル" : "この端末に保存"}</small></div>
                     <div className="checkin-history-strip">
-                      {checkIns.slice(0, 4).map((checkIn) => (
+                      {visibleExploreCheckIns.slice(0, 4).map((checkIn) => (
                         <div className="checkin-history-item" key={checkIn.id}>
                           <span>{formatTime(checkIn.checkedInAt)}</span>
                           <strong>{checkIn.spotName}</strong>
@@ -666,7 +715,7 @@ export default function HorekiApp() {
                       >
                         <span className={`spot-icon ${meta.className}`}><Icon size={21} /></span>
                         <span className="spot-copy"><small>{spot.category}</small><strong>{spot.name}</strong><em>{spot.description}</em></span>
-                        <span className="spot-distance">{formatDistance(spot.distanceM)}<small>{checkIns.some((checkIn) => checkIn.spotId === spot.id) ? "チェックイン済み" : "徒歩圏内"}</small></span>
+                        <span className="spot-distance">{formatDistance(spot.distanceM)}<small>{visibleExploreCheckIns.some((checkIn) => checkIn.spotId === spot.id) ? "チェックイン済み" : "徒歩圏内"}</small></span>
                       </button>
                     );
                   })}
@@ -729,7 +778,20 @@ function RecordDetail({ record, checkIns, onBack }: { record: WalkRecord; checkI
     <div className="record-detail">
       <button className="back-button" type="button" onClick={onBack}><ChevronLeft size={20} /> 記録一覧へ</button>
       <div className="detail-heading"><small>WALK LOG</small><h1>{formatDate(record.startedAt)}の街歩き</h1><p>{formatTime(record.startedAt)} – {formatTime(record.endedAt)}</p></div>
-      <div className="detail-map"><HorekiMap routes={[{ points: record.points }]} /></div>
+      <div className="detail-map">
+        <HorekiMap
+          routes={[{ points: record.points }]}
+          spots={walkCheckIns.map((checkIn) => ({
+            id: checkIn.id,
+            name: `${formatTime(checkIn.checkedInAt)} ${checkIn.spotName}`,
+            category: checkIn.category,
+            lat: checkIn.lat,
+            lng: checkIn.lng,
+            distanceM: 0,
+            description: "チェックイン地点",
+          }))}
+        />
+      </div>
       <div className="detail-stats">
         <div className="hero-stat"><small>歩行距離</small><strong>{formatDistance(record.distanceM)}</strong></div>
         <div><Clock3 size={18} /><small>歩行時間</small><strong>{formatDuration(record.durationMs)}</strong></div>
