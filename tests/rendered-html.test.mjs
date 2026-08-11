@@ -61,6 +61,9 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.match(app, /チェックインのタイムライン/);
   assert.match(app, /日付で区切らず新しい順/);
   assert.match(app, /単独チェックイン/);
+  assert.match(app, /TimelinePhoto/);
+  assert.match(app, /imageUrl:\s*selectedSpot\.imageUrl/);
+  assert.doesNotMatch(app, /className="map-title-card"/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);

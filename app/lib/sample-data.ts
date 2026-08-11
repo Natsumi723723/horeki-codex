@@ -41,8 +41,26 @@ export const SAMPLE_RECORDS: WalkRecord[] = [0, 2].map((offset, recordIndex) => 
 });
 
 const SAMPLE_CHECKPOINTS = [
-  { pointIndex: 3, minuteOffset: 27, spotId: "sample-bridge", spotName: "旧街道の道標", category: "史跡" as const },
-  { pointIndex: 6, minuteOffset: 54, spotId: "sample-shrine", spotName: "まちの鎮守さま", category: "神社・寺" as const },
+  {
+    pointIndex: 3,
+    minuteOffset: 27,
+    spotId: "sample-bridge",
+    spotName: "旧街道の道標",
+    category: "史跡" as const,
+    imageUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Shoin%20shrine%20main%20torii%20-%20taisho%20era.jpg?width=900",
+    imageAlt: "大正期の松陰神社の鳥居（歴史カテゴリのイメージ）",
+    imageCredit: "Wikimedia Commons（カテゴリイメージ）",
+  },
+  {
+    pointIndex: 6,
+    minuteOffset: 54,
+    spotId: "sample-shrine",
+    spotName: "まちの鎮守さま",
+    category: "神社・寺" as const,
+    imageUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Modern%20Torii.JPG?width=900",
+    imageAlt: "東京都内の神社の鳥居（カテゴリイメージ）",
+    imageCredit: "Wikimedia Commons / Asanagi（カテゴリイメージ）",
+  },
 ];
 
 export function createSampleCheckIns(walkId: string, startedAt: number, points: GeoPoint[]): CheckIn[] {
@@ -59,6 +77,9 @@ export function createSampleCheckIns(walkId: string, startedAt: number, points: 
       lng: point.lng,
       distanceFromCurrentM: 0,
       walkId,
+      imageUrl: checkpoint.imageUrl,
+      imageAlt: checkpoint.imageAlt,
+      imageCredit: checkpoint.imageCredit,
     } satisfies CheckIn];
   });
 }

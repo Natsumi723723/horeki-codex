@@ -590,6 +590,9 @@ export default function HorekiApp() {
       lng: selectedSpot.lng,
       distanceFromCurrentM: explorePosition ? distanceBetween(explorePosition, selectedSpot) : null,
       walkId: activeWalk && !activeWalk.isDemo ? activeWalk.id : null,
+      imageUrl: selectedSpot.imageUrl,
+      imageAlt: selectedSpot.imageAlt,
+      imageCredit: selectedSpot.imageCredit,
     };
     if (isPreviewCheckIn) {
       setPreviewCheckIns((previous) => [checkIn, ...previous]);
@@ -625,7 +628,7 @@ export default function HorekiApp() {
 
       <section className="app-content">
         {tab === "map" && (
-          <div className="map-screen">
+          <div className={`map-screen ${activeWalk ? "is-walking" : ""}`}>
             <div className="full-map">
               <HorekiMap
                 currentPosition={currentPosition}
@@ -641,11 +644,6 @@ export default function HorekiApp() {
                 }))}
                 followCurrent={Boolean(activeWalk)}
               />
-              <div className="map-title-card">
-                <small>{activeWalk?.isDemo ? "DEMO WALK" : activeWalk ? "NOW WALKING" : "TODAY'S MAP"}</small>
-                <strong>{activeWalk?.isDemo ? "デモ散歩" : activeWalk ? "歩行中" : "今日の街を歩こう"}</strong>
-                <span>{activeWalk ? formatDate(activeWalk.startedAt, false) : "歩いた線が、あなたの地図になる"}</span>
-              </div>
               <button className="locate-button" type="button" onClick={locateOnce} aria-label="現在地を表示">
                 <LocateFixed size={22} />
               </button>
@@ -659,8 +657,8 @@ export default function HorekiApp() {
                   <div className="recording-status">
                     <span className={activeWalk.status === "recording" ? "live-dot" : "pause-dot"} />
                     <span>{activeWalk.isDemo
-                      ? demoComplete ? "デモルートを歩き終えました" : activeWalk.status === "recording" ? "サンプルの街歩きを再生しています" : "デモを一時停止しています"
-                      : activeWalk.status === "recording" ? "GPSで歩行を記録しています" : "記録を一時停止しています"}</span>
+                      ? demoComplete ? "デモ完了" : activeWalk.status === "recording" ? "デモ歩行中" : "デモ一時停止"
+                      : activeWalk.status === "recording" ? "歩行中" : "一時停止"}</span>
                   </div>
                   <div className="live-stats">
                     <div><small>距離</small><strong>{formatDistance(activeWalk.distanceM)}</strong></div>
@@ -907,15 +905,27 @@ function CheckInTimeline({ checkIns, isSample }: { checkIns: CheckIn[]; isSample
             </time>
             <div className="timeline-rail" aria-hidden="true"><span><CheckCircle2 size={15} /></span></div>
             <div className="timeline-place">
-              <div className="timeline-labels"><span>{checkIn.category}</span><em>{checkIn.walkId ? "街歩き中" : "単独チェックイン"}</em>{isSample && <em>サンプル</em>}</div>
-              <h2>{checkIn.spotName}</h2>
-              <p><MapPin size={13} /> この場所にチェックインしました</p>
+              <TimelinePhoto checkIn={checkIn} />
+              <div className="timeline-place-copy">
+                <div className="timeline-labels"><span>{checkIn.category}</span><em>{checkIn.walkId ? "街歩き中" : "単独チェックイン"}</em>{isSample && <em>サンプル</em>}</div>
+                <h2>{checkIn.spotName}</h2>
+                <p><MapPin size={13} /> この場所にチェックインしました</p>
+              </div>
             </div>
           </article>
         ))}
       </div>
     </section>
   );
+}
+
+function TimelinePhoto({ checkIn }: { checkIn: CheckIn }) {
+  const meta = CATEGORY_META[checkIn.category];
+  const Icon = meta.icon;
+  if (!checkIn.imageUrl) {
+    return <div className={`timeline-photo-placeholder ${meta.className}`}><Icon size={25} /><small>写真なし</small></div>;
+  }
+  return <img className="timeline-photo" src={checkIn.imageUrl} alt={checkIn.imageAlt ?? `${checkIn.spotName}の写真`} loading="lazy" decoding="async" />;
 }
 
 function RecordDetail({ record, checkIns, onBack }: { record: WalkRecord; checkIns: CheckIn[]; onBack: () => void }) {

@@ -55,4 +55,7 @@ export type CheckIn = {
   lng: number;
   distanceFromCurrentM: number | null;
   walkId: string | null;
+  imageUrl?: string;
+  imageAlt?: string;
+  imageCredit?: string;
 };
