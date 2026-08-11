@@ -311,13 +311,37 @@ export default function HorekiApp() {
     }
   };
 
+  const startDemo = () => {
+    stopWatching();
+    recordingEnabledRef.current = false;
+    const startedAt = Date.now() - 46 * 60_000;
+    const firstPoint = {
+      ...SAMPLE_RECORDS[0].points[0],
+      timestamp: startedAt,
+      breakBefore: true,
+    };
+    setCurrentPosition(firstPoint);
+    setGeoState("idle");
+    setActiveWalk({
+      id: `demo-${Date.now()}`,
+      startedAt,
+      points: [firstPoint],
+      distanceM: 0,
+      status: "recording",
+      pausedAt: null,
+      totalPausedMs: 0,
+      isDemo: true,
+    });
+    setToast("GPSを使わず、サンプルの街歩きを再生します");
+  };
+
   const pauseWalk = async () => {
     if (!activeWalk || activeWalk.status !== "recording") return;
     stopWatching();
     recordingEnabledRef.current = false;
     const paused = { ...activeWalk, status: "paused" as const, pausedAt: Date.now() };
     setActiveWalk(paused);
-    await saveActiveWalk(paused);
+    if (!activeWalk.isDemo) await saveActiveWalk(paused);
   };
 
   const resumeWalk = async () => {
@@ -330,8 +354,10 @@ export default function HorekiApp() {
     };
     forceBreakRef.current = true;
     setActiveWalk(resumed);
-    await saveActiveWalk(resumed);
-    void beginWatching(true);
+    if (!activeWalk.isDemo) {
+      await saveActiveWalk(resumed);
+      void beginWatching(true);
+    }
   };
 
   const finishWalk = async () => {
@@ -348,7 +374,16 @@ export default function HorekiApp() {
       distanceM: activeWalk.distanceM,
       cumulativeElevationM: calculateElevation(activeWalk.points),
       points: activeWalk.points,
+      isSample: activeWalk.isDemo,
     };
+    if (activeWalk.isDemo) {
+      setActiveWalk(null);
+      setCurrentPosition(null);
+      setSelectedRecord(record);
+      setTab("records");
+      setToast("デモ記録の詳細を表示しました。実際の記録には保存していません");
+      return;
+    }
     try {
       await saveWalkRecord(record);
       await clearActiveWalk();
@@ -365,6 +400,37 @@ export default function HorekiApp() {
   const activeDuration = activeWalk
     ? now - activeWalk.startedAt - activeWalk.totalPausedMs - (activeWalk.status === "paused" && activeWalk.pausedAt ? now - activeWalk.pausedAt : 0)
     : 0;
+
+  const demoComplete = Boolean(
+    activeWalk?.isDemo && activeWalk.points.length >= SAMPLE_RECORDS[0].points.length,
+  );
+
+  useEffect(() => {
+    if (!activeWalk?.isDemo || activeWalk.status !== "recording") return;
+    const timer = window.setTimeout(() => {
+      setActiveWalk((previous) => {
+        if (!previous?.isDemo || previous.status !== "recording") return previous;
+        const nextIndex = previous.points.length;
+        if (nextIndex >= SAMPLE_RECORDS[0].points.length) {
+          return { ...previous, status: "paused", pausedAt: Date.now() };
+        }
+        const sourcePoint = SAMPLE_RECORDS[0].points[nextIndex];
+        const nextPoint: GeoPoint = {
+          ...sourcePoint,
+          timestamp: previous.startedAt + nextIndex * 6 * 60_000,
+          breakBefore: false,
+        };
+        const lastPoint = previous.points.at(-1)!;
+        setCurrentPosition(nextPoint);
+        return {
+          ...previous,
+          points: [...previous.points, nextPoint],
+          distanceM: previous.distanceM + distanceBetween(lastPoint, nextPoint),
+        };
+      });
+    }, 720);
+    return () => window.clearTimeout(timer);
+  }, [activeWalk?.isDemo, activeWalk?.status, activeWalk?.points.length]);
 
   const cumulative = useMemo(() => records.reduce((sum, record) => sum + record.distanceM, 0), [records]);
   const walkedDays = useMemo(() => new Set(records.map((record) => new Date(record.startedAt).toDateString())).size, [records]);
@@ -415,8 +481,8 @@ export default function HorekiApp() {
                 followCurrent={Boolean(activeWalk)}
               />
               <div className="map-title-card">
-                <small>{activeWalk ? "NOW WALKING" : "TODAY'S MAP"}</small>
-                <strong>{activeWalk ? "歩行中" : "今日の街を歩こう"}</strong>
+                <small>{activeWalk?.isDemo ? "DEMO WALK" : activeWalk ? "NOW WALKING" : "TODAY'S MAP"}</small>
+                <strong>{activeWalk?.isDemo ? "デモ散歩" : activeWalk ? "歩行中" : "今日の街を歩こう"}</strong>
                 <span>{activeWalk ? formatDate(activeWalk.startedAt, false) : "歩いた線が、あなたの地図になる"}</span>
               </div>
               <button className="locate-button" type="button" onClick={locateOnce} aria-label="現在地を表示">
@@ -431,7 +497,9 @@ export default function HorekiApp() {
                 <>
                   <div className="recording-status">
                     <span className={activeWalk.status === "recording" ? "live-dot" : "pause-dot"} />
-                    <span>{activeWalk.status === "recording" ? "GPSで歩行を記録しています" : "記録を一時停止しています"}</span>
+                    <span>{activeWalk.isDemo
+                      ? demoComplete ? "デモルートを歩き終えました" : activeWalk.status === "recording" ? "サンプルの街歩きを再生しています" : "デモを一時停止しています"
+                      : activeWalk.status === "recording" ? "GPSで歩行を記録しています" : "記録を一時停止しています"}</span>
                   </div>
                   <div className="live-stats">
                     <div><small>距離</small><strong>{formatDistance(activeWalk.distanceM)}</strong></div>
@@ -439,12 +507,14 @@ export default function HorekiApp() {
                     <div><small>取得地点</small><strong>{activeWalk.points.length}<em>点</em></strong></div>
                   </div>
                   <div className="record-controls">
-                    {activeWalk.status === "recording" ? (
+                    {demoComplete ? (
+                      <button className="secondary-action" type="button" onClick={startDemo}><Play size={19} fill="currentColor" /> もう一度</button>
+                    ) : activeWalk.status === "recording" ? (
                       <button className="secondary-action" type="button" onClick={pauseWalk}><Pause size={19} /> 一時停止</button>
                     ) : (
                       <button className="primary-action compact-action" type="button" onClick={resumeWalk}><Play size={19} fill="currentColor" /> 再開</button>
                     )}
-                    <button className="finish-action" type="button" onClick={finishWalk}><CircleStop size={19} /> 終了して保存</button>
+                    <button className="finish-action" type="button" onClick={finishWalk}><CircleStop size={19} /> {activeWalk.isDemo ? "デモの詳細を見る" : "終了して保存"}</button>
                   </div>
                 </>
               ) : (
@@ -456,6 +526,9 @@ export default function HorekiApp() {
                   <button className="primary-action start-action" type="button" onClick={startWalk}>
                     <span className="play-disc"><Play size={20} fill="currentColor" /></span>
                     歩き始める
+                  </button>
+                  <button className="demo-action" type="button" onClick={startDemo}>
+                    <Route size={18} /> デモ散歩を見る <small>GPS不要</small>
                   </button>
                   <p className="record-hint">開始すると位置情報を確認します。通信がなくても記録できます。</p>
                 </>

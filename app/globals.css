@@ -164,6 +164,24 @@ button { -webkit-tap-highlight-color: transparent; }
 .primary-action { color: var(--white-paper); background: var(--deep-indigo); border: 1px solid var(--deep-indigo); }
 .primary-action:hover { background: #1c2a3a; }
 .start-action { width: 100%; min-height: 57px; font-size: 17px; }
+.demo-action {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 9px;
+  color: var(--deep-indigo);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.demo-action:hover { border-color: var(--indigo); background: rgba(54, 86, 111, .06); }
+.demo-action small { margin-left: 3px; padding: 2px 5px; color: var(--brown); background: #ece5d7; border-radius: 3px; font-size: 8px; }
 .play-disc { width: 31px; height: 31px; display: grid; place-items: center; color: var(--deep-indigo); background: var(--white-paper); border-radius: 50%; }
 .record-hint { margin: 10px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; text-align: center; }
 .recording-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; color: var(--muted); font-size: 12px; font-weight: 600; }

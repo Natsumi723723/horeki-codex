@@ -23,6 +23,7 @@ test("server-renders the Horeki GPS walking app shell", async () => {
   assert.match(html, /<html lang="ja">/);
   assert.match(html, /<title>歩歴（ほれき）｜歩いた街が、あなたの地図になる<\/title>/);
   assert.match(html, /歩き始める/);
+  assert.match(html, /デモ散歩を見る/);
   assert.match(html, /記録はこの端末だけ/);
   assert.match(html, /aria-label="メインメニュー"/);
   assert.match(html, /MY MAP/);
@@ -45,6 +46,9 @@ test("keeps GPS filtering and device-local persistence in the product source", a
   assert.match(app, /saveActiveWalk/);
   assert.match(app, /clearActiveWalk/);
   assert.match(app, /overpass-api\.de/);
+  assert.match(app, /startDemo/);
+  assert.match(app, /GPS不要/);
+  assert.match(app, /isSample:\s*activeWalk\.isDemo/);
   assert.match(geo, /candidate\.accuracy > 80/);
   assert.match(geo, /speedMps > 4\.5/);
   assert.match(geo, /distanceM > 250/);

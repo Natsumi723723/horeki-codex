@@ -26,6 +26,7 @@ export type ActiveWalk = {
   status: "recording" | "paused";
   pausedAt: number | null;
   totalPausedMs: number;
+  isDemo?: boolean;
 };
 
 export type SpotCategory = "史跡" | "神社・寺" | "文化施設" | "歴史・文化" | "公園・自然";
